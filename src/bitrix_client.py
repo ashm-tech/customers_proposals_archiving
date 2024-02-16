@@ -1,19 +1,19 @@
 import os
-from alias import ALIAS
+import uuid
 
 from fast_bitrix24 import Bitrix
-from dotenv import load_dotenv
+
+from src.alias import ALIAS
 
 
 class BitrixApp:
     def __init__(self):
-        load_dotenv(".env")
-        self.bitrix = Bitrix(os.getenv('BITRIX_WEBHOOK'))
+        self.bitrix = Bitrix(os.getenv("BITRIX_WEBHOOK"))
 
     def get_all_items(self):
         params = {
-            'IBLOCK_TYPE_ID': 'lists',
-            'IBLOCK_ID': os.getenv('LIST_ID'),
+            "IBLOCK_TYPE_ID": "lists",
+            "IBLOCK_ID": os.getenv("LIST_ID"),
         }
         bitrix_list = self.bitrix.get_all("lists.element.get", params)
         return bitrix_list
@@ -26,16 +26,16 @@ class BitrixApp:
             except KeyError:
                 pass
         params = {
-            'IBLOCK_TYPE_ID': 'lists',
-            'IBLOCK_ID': os.getenv('LIST_ID'),
-            "ELEMENT_CODE": f"element_15vds",
-            'FIELDS': fields
+            "IBLOCK_TYPE_ID": "lists",
+            "IBLOCK_ID": os.getenv("LIST_ID"),
+            "ELEMENT_CODE": uuid.uuid4(),
+            "FIELDS": fields,
         }
-        result = self.bitrix.call('lists.element.add', params)
+        result = self.bitrix.call("lists.element.add", params)
         return result
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     test_item = {
         "Наименование МТР": "NAMES",
         "Менеджер": "PROPERTY_109",
