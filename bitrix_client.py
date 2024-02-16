@@ -1,26 +1,8 @@
 import os
+from alias import ALIAS
 
 from fast_bitrix24 import Bitrix
 from dotenv import load_dotenv
-
-ALIAS = {
-    "Наименование МТР": "NAME",
-    "Менеджер": "PROPERTY_109",
-    "Базис поставки": "PROPERTY_111",
-    "ЕНС": "PROPERTY_113",
-    "ГОСТ": "PROPERTY_117",
-    "Изготовитель": "PROPERTY_119",
-    "ЕИ": "PROPERTY_121",
-    "Количество": "PROPERTY_141",
-    "№": "PROPERTY_125",
-    "Цена за шт, евро": "PROPERTY_127",
-    "сть-ть евро": "PROPERTY_129",
-    "срок": "PROPERTY_131",
-    "Сделка": "PROPERTY_133",
-    "Дата предложения": "PROPERTY_135",
-    "Клиент": "PROPERTY_137",
-    "ID сделки": "PROPERTY_139",
-}
 
 
 class BitrixApp:
