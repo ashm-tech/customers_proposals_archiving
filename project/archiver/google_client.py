@@ -3,7 +3,7 @@ import gspread
 
 class GoogleSheetsApp:
     def __init__(self, table_key):
-        self.g_client = gspread.service_account(filename="archiver/credentials.json")
+        self.g_client = gspread.service_account(filename="usr/src/app/archiver/credentials.json")
         self.table = self.g_client.open_by_key(table_key)
 
     def get_data(self):
