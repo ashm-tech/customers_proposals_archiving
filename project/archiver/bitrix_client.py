@@ -38,9 +38,9 @@ class BitrixApp:
         result = self.bitrix.call("lists.element.add", params)
         return result
 
-    def check_item_lists(self, alias: dict, bitrix_filter: list, item: dict) -> None:
+    def check_item_lists(self, alias: dict, bitrix_filter: list, item: dict) -> list:
         """
-        Checks if item is in lists and deletes it
+        Checks if item is in lists
         :param alias: alias from item fields to bitrix fields
         :param bitrix_filter: fields of item for searching
         :param item: item to check
@@ -62,13 +62,15 @@ class BitrixApp:
             },
         )
 
-        if results:
-            for result in results:
-                self.bitrix.call(
-                    "lists.element.delete",
-                    {
-                        "IBLOCK_TYPE_ID": "lists",
-                        "IBLOCK_ID": os.getenv("LIST_ID"),
-                        "ELEMENT_ID": str(result["ID"]),
-                    },
-                )
+        return results
+
+    def delete_item(self, item_ids):
+        for item_id in item_ids:
+            self.bitrix.call(
+                "lists.element.delete",
+                {
+                    "IBLOCK_TYPE_ID": "lists",
+                    "IBLOCK_ID": os.getenv("LIST_ID"),
+                    "ELEMENT_ID": item_id,
+                },
+            )
