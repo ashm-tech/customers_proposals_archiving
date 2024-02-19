@@ -7,7 +7,7 @@ from worker import process_archiver_task
 app = FastAPI(swagger_ui_parameters={"defaultModelsExpandDepth": -1})
 templates = Jinja2Templates(directory="templates")
 
-load_env_file("archiver/.env")
+load_env_file()
 
 
 @app.get("/", include_in_schema=False)
