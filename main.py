@@ -9,7 +9,7 @@ from src.google_client import GoogleSheetsApp
 
 if __name__ == "__main__":
     load_dotenv(".env")
-    google_app = GoogleSheetsApp(os.getenv("GOOGLE_SHEETS_URL"))
+    google_app = GoogleSheetsApp(os.getenv("GOOGLE_SHEETS_KEY"))
     bitrix_app = BitrixApp(os.getenv("BITRIX_WEBHOOK"))
 
     data = google_app.get_data()
@@ -27,8 +27,13 @@ if __name__ == "__main__":
     }
 
     for item in data:
-        try:
-            item.update(extra)
-            bitrix_app.add_item(alias=ALIAS, item=item)
-        except:
-            pass
+        if item.get("Наименование МТР"):
+            try:
+                bitrix_filter = ["ID сделки", "Наименование МТР", "№"]
+                item.update(extra)
+                bitrix_app.check_item_lists(
+                    alias=ALIAS, bitrix_filter=bitrix_filter, item=item
+                )
+                bitrix_app.add_item(alias=ALIAS, item=item)
+            except:
+                pass
