@@ -1,4 +1,4 @@
-from os import getenv
+import os
 from datetime import datetime
 
 from celery import Celery
@@ -11,9 +11,9 @@ from archiver.google_client import GoogleSheetsApp
 load_env_file()
 
 celery = Celery(__name__)
-celery.conf.broker_url = getenv("CELERY_BROKER_URL") # type: ignore
-celery.conf.result_backend = getenv("CELERY_RESULT_BACKEND") # type: ignore
-celery.conf.timezone = getenv("CELERY_TIMEZONE") # type: ignore
+celery.conf.broker_url = os.getenv("CELERY_BROKER_URL")  # type: ignore
+celery.conf.result_backend = os.getenv("CELERY_RESULT_BACKEND")  # type: ignore
+celery.conf.timezone = os.getenv("CELERY_TIMEZONE")  # type: ignore
 celery.conf.broker_connection_retry = True
 celery.conf.broker_connection_retry_on_startup = True
 
@@ -27,6 +27,7 @@ celery.conf.beat_schedule = {
     }
 }
 """
+
 
 @celery.task(
     name='process_archiver_task',
