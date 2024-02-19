@@ -1,9 +1,12 @@
 import os
 
-from archiver.alias import ALIAS
-from archiver.bitrix_client import BitrixApp
-from archiver.google_client import GoogleSheetsApp
 from celery import Celery
+
+from archiver import (
+    ALIAS,
+    BitrixApp,
+    GoogleSheetsApp
+)
 from settings import load_env_file
 
 load_env_file("archiver/.env")
