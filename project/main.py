@@ -15,12 +15,6 @@ async def index():
     return FileResponse("templates/index.html")
 
 
-@app.post("/archiver", status_code=202)
-async def handler():
-    process_archiver_task.delay()
-    return {"Status": "Success"}
-
-
 @app.post("/lists_update", status_code=202)
 async def index(
     sheets_url: str,
