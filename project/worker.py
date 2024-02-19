@@ -9,7 +9,7 @@ from archiver import (
 )
 from settings import load_env_file
 
-load_env_file("archiver/.env")
+load_env_file()
 
 celery = Celery(__name__)
 celery.conf.broker_url = os.getenv("CELERY_BROKER_URL")  # type: ignore
@@ -33,7 +33,7 @@ celery.conf.beat_schedule = {
 @celery.task(name="process_archiver_task", acks_late=True, reject_on_worker_lost=True)
 def process_archiver_task(table_key, proposal_date, deal, client, deal_id) -> dict:
     google_app = GoogleSheetsApp(table_key=table_key)
-    bitrix_app = BitrixApp(os.getenv("BITRIX_WEBHOOK"))
+    bitrix_app = BitrixApp(webhook=os.getenv("BITRIX_WEBHOOK"), list_id=os.getenv('LIST_ID'))
 
     data = google_app.get_data()
 
