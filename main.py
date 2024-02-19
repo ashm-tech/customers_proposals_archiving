@@ -27,8 +27,11 @@ if __name__ == "__main__":
     }
 
     for item in data:
-        try:
-            item.update(extra)
-            bitrix_app.add_item(alias=ALIAS, item=item)
-        except:
-            pass
+        if item.get("Наименование МТР"):
+            try:
+                bitrix_filter = ["ID сделки", "Наименование МТР", "№"]
+                item.update(extra)
+                bitrix_app.check_item_lists(alias=ALIAS, bitrix_filter=bitrix_filter, item=item)
+                bitrix_app.add_item(alias=ALIAS, item=item)
+            except:
+                pass
