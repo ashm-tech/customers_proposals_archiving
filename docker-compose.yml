@@ -1,0 +1,191 @@
+version: '3.8'
+
+services:
+
+  http_api:
+    container_name: http_api
+    build: ./project
+    command: uvicorn main:app --host 0.0.0.0 --port 8000
+    volumes:
+      - ./project:/usr/src/app
+    environment:
+      - CELERY_BROKER_URL=amqp://guest:guest@tasks_queue:5672//
+      - CELERY_RESULT_BACKEND=redis://results_queue:6379/0
+      - CELERY_TIMEZONE=Europe/Moscow
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.http_api.rule=PathPrefix(`/`)"
+      - "traefik.http.routers.http_api.priority=1"
+      - "traefik.http.routers.http_api.service=http_api"
+      - "traefik.http.routers.http_api.middlewares=auth"
+      - "traefik.http.services.http_api.loadbalancer.server.port=8000"
+      - "traefik.http.routers.http_api_api.rule=PathPrefix(`/api`)"
+      - "traefik.http.routers.http_api_api.priority=2"
+      - "traefik.http.routers.http_api_api.service=http_api"
+      - "traefik.http.services.http_api_api.loadbalancer.server.port=8000"
+    healthcheck:
+      test: curl -f http://localhost:8000/api/health
+      interval: 30s
+      timeout: 30s
+      start_period: 60s
+      retries: 3
+    restart: always
+    ports:
+      - '8000:8000'
+    depends_on:
+      worker:
+        condition: service_healthy
+
+  worker:
+    container_name: worker
+    build: ./project
+    command: celery -A worker.celery worker -B --loglevel=info --max-tasks-per-child=5
+    volumes:
+      - ./project:/usr/src/app
+    environment:
+      - CELERY_BROKER_URL=amqp://guest:guest@tasks_queue:5672//
+      - CELERY_RESULT_BACKEND=redis://results_queue:6379/0
+      - CELERY_WORKER_CONCURRENCY=5
+      - CELERY_ENABLE_UTC=False
+      - CELERY_TIMEZONE=Europe/Moscow
+    healthcheck:
+      test: celery inspect ping
+      interval: 30s
+      timeout: 30s
+      start_period: 60s
+      retries: 3
+    restart: always
+    depends_on:
+      tasks_queue:
+        condition: service_healthy
+      results_queue:
+        condition: service_healthy
+
+  tasks_queue:
+    container_name: tasks_queue
+    hostname: rabbitmq
+    image: rabbitmq:3.8.15-management
+    environment:
+      - RABBITMQ_SERVER_ADDITIONAL_ERL_ARGS=-rabbit consumer_timeout 36000000
+    healthcheck:
+      test: rabbitmq-diagnostics check_port_connectivity && rabbitmq-diagnostics -q check_local_alarms
+      interval: 60s
+      timeout: 30s
+      start_period: 60s
+      retries: 3
+    restart: always
+
+  results_queue:
+    container_name: results_queue
+    image: redis:7
+    healthcheck:
+      test: redis-cli ping
+      interval: 60s
+      timeout: 30s
+      start_period: 60s
+      retries: 3
+    restart: always
+
+  tasks_dashboard:
+    container_name: tasks_dashboard
+    build: ./project
+    command: celery -A worker.celery flower --port=5555
+    volumes:
+      - ./project:/usr/src/app
+    environment:
+      - CELERY_BROKER_URL=amqp://guest:guest@tasks_queue:5672//
+      - CELERY_RESULT_BACKEND=redis://results_queue:6379/0
+      - CELERY_ENABLE_UTC=False
+      - CELERY_TIMEZONE=Europe/Moscow
+      - FLOWER_BROKER=amqp://guest:guest@tasks_queue:5672//
+      - FLOWER_BROKER_API=http://guest:guest@tasks_queue:15672/api/vhost
+      - FLOWER_PERSISTENT=True
+      - FLOWER_DB=flowerdb
+      - FLOWER_STATE_SAVE_INTERVAL=5
+      - FLOWER_MAX_TASKS=300
+      - FLOWER_URL_PREFIX=/tasks
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.tasks_dashboard.rule=PathPrefix(`/tasks/`)"
+      - "traefik.http.routers.tasks_dashboard.priority=2"
+      - "traefik.http.routers.tasks_dashboard.middlewares=auth"
+      - "traefik.http.services.tasks_dashboard.loadbalancer.server.port=5555"
+    healthcheck:
+      test: curl -f http://localhost:5555/tasks/healthcheck
+      interval: 90s
+      timeout: 30s
+      start_period: 60s
+      retries: 3
+    restart: always
+    depends_on:
+      tasks_queue:
+        condition: service_healthy
+      results_queue:
+        condition: service_healthy
+      worker:
+        condition: service_healthy
+
+  logs_dashboard:
+     container_name: logs_dashboard
+     image: amir20/dozzle:latest
+     volumes:
+       - /var/run/docker.sock:/var/run/docker.sock
+     environment:
+       - DOZZLE_NO_ANALYTICS=True
+       - DOZZLE_ENABLE_ACTIONS=True
+       - DOZZLE_BASE=/logs
+     labels:
+       - "traefik.enable=true"
+       - "traefik.http.routers.logs_dashboard.rule=PathPrefix(`/logs/`)"
+       - "traefik.http.routers.logs_dashboard.priority=2"
+       - "traefik.http.routers.logs_dashboard.middlewares=auth"
+       - "traefik.http.services.logs_dashboard.loadbalancer.server.port=8080"
+     healthcheck:
+       test: ["CMD", "/dozzle", "healthcheck"]
+       interval: 90s
+       timeout: 30s
+       start_period: 60s
+       retries: 3
+     restart: always
+
+  reverse-proxy:
+    container_name: reverse-proxy
+    image: traefik:v2.10
+    command:
+      - "--providers.docker"
+      - "--ping"
+      - "--providers.docker.exposedByDefault=false"
+      - "--providers.docker.allowEmptyServices=true"
+      - "--log.format=json"
+      - "--log.level=DEBUG"
+    ports:
+      - 80:80
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./project/usersfile.txt:/usersfile.txt
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.middlewares.auth.basicauth.usersfile=/usersfile.txt"
+    healthcheck:
+      test: traefik healthcheck --ping
+      interval: 60s
+      timeout: 30s
+      start_period: 60s
+      retries: 3
+    restart: always
+    depends_on:
+      http_api:
+        condition: service_healthy
+      tasks_dashboard:
+        condition: service_healthy
+      logs_dashboard:
+         condition: service_healthy
+
+  unhealthy_containers_rebooter:
+    container_name: unhealthy_containers_rebooter
+    restart: always
+    image: willfarrell/autoheal
+    environment:
+      - AUTOHEAL_CONTAINER_LABEL=all
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock

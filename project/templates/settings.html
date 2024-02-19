@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Settings</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
+  </head>
+  <body>
+    <div class="container">
+      {% if saved %}
+        <div class="alert alert-success fade show" role="alert" data-timeout="4000">Saved</div>
+      {% endif %}
+      {% if settings %}
+          <form class="bg-light" action="/settings" method="post">
+            {% for key, value in settings.items() %}
+              <div class="form-floating mb-3">
+                <input type="text" class="form-control" id="{{key|safe}}" name="{{key|safe}}" value="{{value|e}}">
+                <label for="{{key|safe}}">{{key|safe}}</label>
+              </div>
+            {% endfor %}
+
+            <div class="d-grid gap-2">
+              <button type="submit" class="btn btn-primary">Save</button>
+            </div>
+          </form>
+          <br/><br/>
+     {% endif %}
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL" crossorigin="anonymous"></script>
+    {% if saved %}
+      <script type="text/javascript">
+              let alert_list = document.querySelectorAll('.alert')
+              alert_list.forEach(function(alert) {
+                  new bootstrap.Alert(alert);
+
+                  let alert_timeout = alert.getAttribute('data-timeout');
+                  setTimeout(() => {
+                      bootstrap.Alert.getInstance(alert).close();
+                  }, +alert_timeout);
+              });
+      </script>
+    {% endif %}
+  </body>
+</html>
