@@ -9,7 +9,7 @@ from src.google_client import GoogleSheetsApp
 
 if __name__ == "__main__":
     load_dotenv(".env")
-    google_app = GoogleSheetsApp(os.getenv("GOOGLE_SHEETS_URL"))
+    google_app = GoogleSheetsApp(os.getenv("GOOGLE_SHEETS_KEY"))
     bitrix_app = BitrixApp(os.getenv("BITRIX_WEBHOOK"))
 
     data = google_app.get_data()
