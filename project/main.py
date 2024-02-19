@@ -1,13 +1,12 @@
 from fastapi import FastAPI, Request
 from fastapi.responses import FileResponse
 from fastapi.templating import Jinja2Templates
-from settings import get_env_file_variables, load_env_file, update_env_file
+from settings import get_env_file_variables, update_env_file
+
 from worker import process_archiver_task
 
 app = FastAPI(swagger_ui_parameters={"defaultModelsExpandDepth": -1})
 templates = Jinja2Templates(directory="templates")
-
-load_env_file()
 
 
 @app.get("/", include_in_schema=False)
