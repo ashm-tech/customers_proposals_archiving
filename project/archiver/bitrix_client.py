@@ -5,14 +5,15 @@ from fast_bitrix24 import Bitrix
 
 
 class BitrixApp:
-    def __init__(self, webhook):
+    def __init__(self, webhook, list_id):
+        self.list_id = list_id
         self.bitrix = Bitrix(webhook)
 
     def get_all_items(self) -> list:
         """Return all items from the list"""
         params = {
             "IBLOCK_TYPE_ID": "lists",
-            "IBLOCK_ID": os.getenv("LIST_ID"),
+            "IBLOCK_ID": self.list_id,
         }
         bitrix_list = self.bitrix.get_all("lists.element.get", params)
         return bitrix_list
@@ -31,7 +32,7 @@ class BitrixApp:
                 pass
         params = {
             "IBLOCK_TYPE_ID": "lists",
-            "IBLOCK_ID": os.getenv("LIST_ID"),
+            "IBLOCK_ID": self.list_id,
             "ELEMENT_CODE": uuid.uuid4(),
             "FIELDS": fields,
         }
@@ -57,7 +58,7 @@ class BitrixApp:
             "lists.element.get",
             {
                 "IBLOCK_TYPE_ID": "lists",
-                "IBLOCK_ID": os.getenv("LIST_ID"),
+                "IBLOCK_ID": self.list_id,
                 "FILTER": fields,
             },
         )
@@ -70,7 +71,7 @@ class BitrixApp:
                 "lists.element.delete",
                 {
                     "IBLOCK_TYPE_ID": "lists",
-                    "IBLOCK_ID": os.getenv("LIST_ID"),
+                    "IBLOCK_ID": self.list_id,
                     "ELEMENT_ID": item_id,
                 },
             )
