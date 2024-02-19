@@ -1,14 +1,13 @@
 from fastapi import FastAPI, Request
 from fastapi.responses import FileResponse
 from fastapi.templating import Jinja2Templates
-from settings import get_env_file_variables, update_env_file
-
-from worker import (
-    process_archiver_task
-)
+from settings import get_env_file_variables, load_env_file, update_env_file
+from worker import process_archiver_task
 
 app = FastAPI(swagger_ui_parameters={"defaultModelsExpandDepth": -1})
 templates = Jinja2Templates(directory="templates")
+
+load_env_file("archiver/.env")
 
 
 @app.get("/", include_in_schema=False)
@@ -16,10 +15,28 @@ async def index():
     return FileResponse("templates/index.html")
 
 
-@app.post('/archiver', status_code=202)
+@app.post("/archiver", status_code=202)
 async def handler():
     process_archiver_task.delay()
-    return {'Status': 'Success'}
+    return {"Status": "Success"}
+
+
+@app.post("/lists_update", status_code=202)
+async def index(
+    sheets_url: str,
+    proposal_date: str,
+    deal: str,
+    client: str,
+    deal_id: int,
+) -> dict:
+    process_archiver_task.delay(
+        table_key=sheets_url,
+        proposal_date=proposal_date,
+        deal=deal,
+        client=client,
+        deal_id=deal_id,
+    )
+    return {"status": "accepted"}
 
 
 @app.get("/api/health", include_in_schema=False)
@@ -29,7 +46,9 @@ async def get_health():
 
 @app.get("/settings", include_in_schema=False)
 async def get_settings(request: Request):
-    return templates.TemplateResponse("settings.html", {"request": request, "settings": get_env_file_variables()})
+    return templates.TemplateResponse(
+        "settings.html", {"request": request, "settings": get_env_file_variables()}
+    )
 
 
 @app.post("/settings", include_in_schema=False)

@@ -1,14 +1,12 @@
 import os
-from datetime import datetime
 
-from celery import Celery
-
-from settings import load_env_file
 from archiver.alias import ALIAS
 from archiver.bitrix_client import BitrixApp
 from archiver.google_client import GoogleSheetsApp
+from celery import Celery
+from settings import load_env_file
 
-load_env_file()
+load_env_file("archiver/.env")
 
 celery = Celery(__name__)
 celery.conf.broker_url = os.getenv("CELERY_BROKER_URL")  # type: ignore
@@ -29,24 +27,12 @@ celery.conf.beat_schedule = {
 """
 
 
-@celery.task(
-    name='process_archiver_task',
-    acks_late=True,
-    reject_on_worker_lost=True
-)
-def process_archiver_task() -> dict:
-    """
-    Логика таски
-    """
-    google_app = GoogleSheetsApp(os.getenv("GOOGLE_SHEETS_KEY"))
+@celery.task(name="process_archiver_task", acks_late=True, reject_on_worker_lost=True)
+def process_archiver_task(table_key, proposal_date, deal, client, deal_id) -> dict:
+    google_app = GoogleSheetsApp(table_key=table_key)
     bitrix_app = BitrixApp(os.getenv("BITRIX_WEBHOOK"))
 
     data = google_app.get_data()
-
-    deal = "deal"
-    proposal_date = datetime.now()
-    client = "client"
-    deal_id = "1"
 
     extra = {
         "Сделка": deal,
@@ -60,12 +46,12 @@ def process_archiver_task() -> dict:
             try:
                 bitrix_filter = ["ID сделки", "Наименование МТР", "№"]
                 item.update(extra)
-                bitrix_app.check_item_lists(
+                existings = bitrix_app.check_item_lists(
                     alias=ALIAS, bitrix_filter=bitrix_filter, item=item
                 )
+                for existing in existings:
+                    bitrix_app.delete_item(str(existing["ID"]))
                 bitrix_app.add_item(alias=ALIAS, item=item)
             except:
                 pass
-    return {
-        'Status': 'Success'
-    }
+    return {"Status": "Success"}
